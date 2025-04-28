@@ -1,13 +1,11 @@
 module alu_tb;
 
-    // Inputs for Adder and Subtractor
-    reg [7:0] a, b;
-    
-    // Outputs for Adder and Subtractor
-    wire [7:0] sum, diff;
-    wire carry_out_add, carry_out_sub;
+    // Declare 8-bit signed registers for inputs
+    reg signed [7:0] a, b;  // Inputs a and b are signed 8-bit
+    wire signed [7:0] sum, diff;  // Sum and diff are signed 8-bit outputs
+    wire carry_out_add, carry_out_sub;  // Carry-out signals
 
-    // Instantiate the Adder
+    // Instantiate the signed Adder
     adder add_inst (
         .a(a),
         .b(b),
@@ -15,7 +13,7 @@ module alu_tb;
         .cout(carry_out_add)
     );
     
-    // Instantiate the Subtractor
+    // Instantiate the signed Subtractor
     subtractor sub_inst (
         .a(a),
         .b(b),
@@ -24,46 +22,38 @@ module alu_tb;
     );
     
     initial begin
-        // Initialize the inputs
-        a = 8'd0; b = 8'd0;
+        // Display the header for the test (in binary format)
+        $display("Time\t a\t\t b\t\t sum\t\t carry_out_add\t diff\t\t carry_out_sub");
         
-        // Display the header for the test
-        $display("Time\t a\t b\t sum\t carry_out_add\t diff\t carry_out_sub");
-
-        // Test Case 1: Simple Addition and Subtraction
-        a = 8'd15; b = 8'd10;
+        // Test Case 1: Simple Addition and Subtraction (positive numbers)
+        a = 8'sd15; b = 8'sd10;  // signed 15 and 10
         #10;
-        $display("%0t\t %d\t %d\t %d\t %b\t %d\t %b", $time, a, b, sum, carry_out_add, diff, carry_out_sub);
+        $display("%0t\t %b\t %b\t %b\t %b\t\t %b\t %b", $time, a, b, sum, carry_out_add, diff, carry_out_sub);
         
         // Test Case 2: Addition with Overflow and Subtraction
-        a = 8'd255; b = 8'd1; // Expect overflow in addition
+        a = 8'sd127; b = 8'sd1;  // Overflow in addition (127 + 1 = 128, out of range)
         #10;
-        $display("%0t\t %d\t %d\t %d\t %b\t %d\t %b", $time, a, b, sum, carry_out_add, diff, carry_out_sub);
+        $display("%0t\t %b\t %b\t %b\t %b\t\t %b\t %b", $time, a, b, sum, carry_out_add, diff, carry_out_sub);
         
         // Test Case 3: Subtraction with Borrow
-        a = 8'd10; b = 8'd15; // Expect borrow in subtraction
+        a = 8'sd10; b = 8'sd20;  // Expect borrow in subtraction (10 - 20 = -10, borrow should occur)
         #10;
-        $display("%0t\t %d\t %d\t %d\t %b\t %d\t %b", $time, a, b, sum, carry_out_add, diff, carry_out_sub);
+        $display("%0t\t %b\t %b\t %b\t %b\t\t %b\t %b", $time, a, b, sum, carry_out_add, diff, carry_out_sub);
         
-        // Test Case 4: Zero Addition and Subtraction
-        a = 8'd0; b = 8'd0;
+        // Test Case 4: Negative Addition and Subtraction
+        a = 8'sd50; b = -100; // Signed negative number, expect negative result
         #10;
-        $display("%0t\t %d\t %d\t %d\t %b\t %d\t %b", $time, a, b, sum, carry_out_add, diff, carry_out_sub);
+        $display("%0t\t %b\t %b\t %b\t %b\t\t %b\t %b", $time, a, b, sum, carry_out_add, diff, carry_out_sub);
         
-        // Test Case 5: Negative Result (Subtraction)
-        a = 8'd50; b = 8'd100; // Expect negative result
+        // Test Case 5: Maximum Values for Addition and Subtraction
+        a = 8'sd127; b = 8'sd127; // Test max signed values
         #10;
-        $display("%0t\t %d\t %d\t %d\t %b\t %d\t %b", $time, a, b, sum, carry_out_add, diff, carry_out_sub);
+        $display("%0t\t %b\t %b\t %b\t %b\t\t %b\t %b", $time, a, b, sum, carry_out_add, diff, carry_out_sub);
         
-        // Test Case 6: Addition of Maximum Values
-        a = 8'd255; b = 8'd255; // Test maximum values
+        // Test Case 6: Random Signed Values
+        a = -50; b = 8'sd30;  // Signed values, check addition and subtraction
         #10;
-        $display("%0t\t %d\t %d\t %d\t %b\t %d\t %b", $time, a, b, sum, carry_out_add, diff, carry_out_sub);
-
-        // Test Case 7: Random Values
-        a = 8'd123; b = 8'd200;
-        #10;
-        $display("%0t\t %d\t %d\t %d\t %b\t %d\t %b", $time, a, b, sum, carry_out_add, diff, carry_out_sub);
+        $display("%0t\t %b\t %b\t %b\t %b\t\t %b\t %b", $time, a, b, sum, carry_out_add, diff, carry_out_sub);
         
         // End of simulation
         $finish;
