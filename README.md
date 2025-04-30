@@ -1,1 +1,3 @@
 # Proiect-ALU-CN
+
+PROIECT INCOMPLET
