@@ -10,32 +10,27 @@ module alu_top2 (
 );
 
 
-wire [7:0] sum, diff;
-wire [15:0] adder_result, subtractor_result, mult_result, div_result;
-wire carry_out_add, carry_out_sub;
+wire [8:0] sum_or_diff;
+wire [15:0] adder_result, mult_result, div_result;
+wire carry_out_add;
 wire start_mult, start_div;
 wire done_mult, done_div;
+wire adder_op;
 
 //reg [2:0] state;   commented pt ca am pus in output sus
 
+assign adder_op = ~op[1] & op[0];  // if op is 01 subtract, adder_op becomes 1
+
 // extend adder and subtractor results to 16 bits
-assign adder_result = {{8{1'b0}},sum};
-assign subtractor_result = {{8{1'b0}},diff};
+assign adder_result = {{7{sum_or_diff[8]}},sum_or_diff};
 
 assign start_mult = ~state[2] & state[1] & state[0];  // if in multiply state, start booth algorithm
 
 adder add_inst (
-        .a(a),
-        .b(b),
-        .sum(sum),
-        .cout(carry_out_add)
-);
-
-subtractor sub_inst (
-    .a(a),
-    .b(b),
-    .diff(diff),
-    .cout(carry_out_sub)
+        .x(a),
+        .y(b),
+        .op(adder_op),
+        .z(sum_or_diff)
 );
 
 BoothMultiplier booth_inst (
@@ -47,6 +42,9 @@ BoothMultiplier booth_inst (
     .done(done_mult)
 );
 
+// placeholder division
+assign done_div = 1;
+assign div_result = a / b;
 
 initial begin
     state = 0;
@@ -54,49 +52,58 @@ initial begin
 end
 
 always @(posedge clk, negedge rst) begin
-    case (state)
-        3'b000: begin  // IDLE
-            if (start) begin
-                case (op)
-                    2'b00: begin // ADD
-                        state = 3'b001;
-                    end
-                    2'b01: begin // SUBTRACT
-                        state = 3'b010;
-                    end
-                    2'b10: begin // MULTIPLY
-                        state = 3'b011;
-                    end
-                    2'b11: begin //DIVIDE
-                        state = 3'b100;
-                    end
-                endcase
+    if (!rst) begin
+        state <= 3'b000;
+        result <= 0;
+    end else begin
+        case (state)
+            3'b000: begin  // IDLE
+                result = 0;
+                if (start) begin
+                    case (op)
+                        2'b00: begin // ADD
+                            state = 3'b001;
+                        end
+                        2'b01: begin // SUBTRACT
+                            state = 3'b010;
+                        end
+                        2'b10: begin // MULTIPLY
+                            state = 3'b011;
+                        end
+                        2'b11: begin //DIVIDE
+                            state = 3'b100;
+                        end
+                    endcase
+                end
             end
-        end
 
-        // MATH OPERATIONS
-        3'b001: begin // ADD
-            result = adder_result;
-            state = 3'b000; // bypass output state
-        end
-        3'b010: begin // SUBTRACT
-            result = subtractor_result;
-            state = 3'b000; // bypass output state
-        end
-        3'b011: begin // MULTIPLY
-            wait(done_mult == 1);
-            result = mult_result;
-            state = 3'b101; // go to output
-        end
-        3'b100: begin // DIVIDE
-            state = 3'b101; // go to output
-        end
+            // MATH OPERATIONS
+            3'b001: begin // ADD
+                result = adder_result;
+                state = 3'b000; // bypass output state
+            end
+            3'b010: begin // SUBTRACT
+                result = adder_result;
+                state = 3'b000; // bypass output state
+            end
+            3'b011: begin // MULTIPLY
+                if (done_mult) begin
+                    result = mult_result;
+                    state = 3'b101; // go to output
+                end
+            end
+            3'b100: begin // DIVIDE
+                if (done_div) begin
+                    result = div_result;
+                end
+                state = 3'b101; // go to output
+            end
 
-        3'b101: begin // OUTPUT(only for multiplication and division)
-
-            state = 3'b000; // go to idle
-        end
-    endcase
+            3'b101: begin // OUTPUT(only for multiplication and division)
+                state = 3'b000; // go to idle
+            end
+        endcase
+    end
 
 end
 

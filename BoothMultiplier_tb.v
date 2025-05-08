@@ -46,6 +46,14 @@ module BoothMultiplier_tb;
         multiplier   = 8'd0;
         run_test("-8 * 0");
 
+        multiplicand = 8'b11111010; //-6
+        multiplier = 8'd3;
+        run_test("-6 * 3");
+
+        multiplicand = 8'b11111001; // -7
+        multiplier = 8'b11111001; // -7
+        run_test("-7 * -7");
+
         $finish;
     end
 
