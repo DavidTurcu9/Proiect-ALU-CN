@@ -1,7 +1,7 @@
 # Proiect-ALU-CN
 
-Turcu David
-Zmuncila Adrian
-Mihai Vacarescu
-Lăzărescu Ana-Maria
+Turcu David,
+Zmuncilă Adrian,
+Mihai Văcărescu,
+Lăzărescu Ana-Maria,
 Hora Florian
