@@ -25,6 +25,7 @@ assign adder_op = ~op[1] & op[0];  // if op is 01 subtract, adder_op becomes 1
 assign adder_result = {{7{sum_or_diff[8]}},sum_or_diff};
 
 assign start_mult = ~state[2] & state[1] & state[0];  // if in multiply state, start booth algorithm
+assign start_div = ~state[2] & ~state[1] & state[0];  // if in divide state, start division algorithm
 
 adder add_inst (
         .x(a),
@@ -42,13 +43,20 @@ BoothMultiplier booth_inst (
     .done(done_mult)
 );
 
-// placeholder division
-assign done_div = 1;
-assign div_result = a / b;
+non_rest_div div_inst (
+    .clk(clk),
+    .reset(rst),
+    .start(start_div),
+    .a(a),
+    .b(b),
+    .quotient(div_result),
+    .done(done_div)
+);
+
 
 initial begin
-    state = 0;
-    result = 0;
+    state <= 0;
+    result <= 0;
 end
 
 always @(posedge clk, negedge rst) begin
@@ -58,20 +66,20 @@ always @(posedge clk, negedge rst) begin
     end else begin
         case (state)
             3'b000: begin  // IDLE
-                result = 0;
+                result <= 0;
                 if (start) begin
                     case (op)
                         2'b00: begin // ADD
-                            state = 3'b001;
+                            state <= 3'b001;
                         end
                         2'b01: begin // SUBTRACT
-                            state = 3'b010;
+                            state <= 3'b010;
                         end
                         2'b10: begin // MULTIPLY
-                            state = 3'b011;
+                            state <= 3'b011;
                         end
                         2'b11: begin //DIVIDE
-                            state = 3'b100;
+                            state <= 3'b100;
                         end
                     endcase
                 end
@@ -79,28 +87,28 @@ always @(posedge clk, negedge rst) begin
 
             // MATH OPERATIONS
             3'b001: begin // ADD
-                result = adder_result;
-                state = 3'b000; // bypass output state
+                result <= adder_result;
+                state <= 3'b000; // bypass output state
             end
             3'b010: begin // SUBTRACT
-                result = adder_result;
-                state = 3'b000; // bypass output state
+                result <= adder_result;
+                state <= 3'b000; // bypass output state
             end
             3'b011: begin // MULTIPLY
                 if (done_mult) begin
-                    result = mult_result;
-                    state = 3'b101; // go to output
+                    result <= mult_result;
+                    state <= 3'b101; // go to output
                 end
             end
             3'b100: begin // DIVIDE
                 if (done_div) begin
-                    result = div_result;
+                    result <= div_result;
+                    state <= 3'b101; // go to output
                 end
-                state = 3'b101; // go to output
             end
 
             3'b101: begin // OUTPUT(only for multiplication and division)
-                state = 3'b000; // go to idle
+                state <= 3'b000; // go to idle
             end
         endcase
     end
