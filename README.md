@@ -1,3 +1,7 @@
 # Proiect-ALU-CN
 
-PROIECT INCOMPLET
+Turcu David
+Zmuncila Adrian
+Mihai Vacarescu
+Lăzărescu Ana-Maria
+Hora Florian
