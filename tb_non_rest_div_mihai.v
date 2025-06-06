@@ -10,7 +10,7 @@ module tb_non_rest_div_mihai;
     wire done;
 
     // Instanțiere modul testat
-    non_rest_div uut (
+    non_rest_div_mihai uut (
         .clk(clk),
         .reset(reset),
         .start(start),
