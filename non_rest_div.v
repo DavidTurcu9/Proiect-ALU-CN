@@ -4,8 +4,9 @@ module non_rest_div (
     input start,              // Start signal
     input signed [7:0] a,     // Dividend
     input signed [7:0] b,     // Divisor
-    output reg signed [15:0] quotient, // Quotient
-    output reg done            // Done flag
+    output reg signed [15:0] quotient,  // Quotient
+    output reg signed [15:0] remainder, // << Restul
+    output reg done           // Done flag
 );
 
     // State definitions
@@ -31,6 +32,7 @@ module non_rest_div (
             state <= IDLE;
             done <= 1'b0;
             quotient <= 16'sd0;
+            remainder <= 16'sd0;
         end else begin
             state <= next_state;
         end
@@ -58,53 +60,57 @@ module non_rest_div (
             b_sign <= 1'b0;
             done <= 1'b0;
             quotient <= 16'sd0;
+            remainder <= 16'sd0;
         end else begin
             case (state)
                 IDLE: begin
-                    done <= 1'b0;  // Clear done flag
+                    done <= 1'b0;
                 end
 
                 INIT: begin
                     a_sign <= a[7];
                     b_sign <= b[7];
-                    Q <= a[7] ? -a : a;  // Load absolute value of a
-                    M <= b[7] ? -b : b;  // Load absolute value of b
-                    A <= 16'd0;  // Initialize remainder
-                    count <= 4'd0;  // Reset counter
+                    Q <= a[7] ? -a : a;
+                    M <= b[7] ? -b : b;
+                    A <= 16'd0;
+                    count <= 4'd0;
                     done <= 1'b0;
                 end
 
                 CALC: begin
-                    // Shift left {A, Q}
                     {next_A, next_Q} = {A[14:0], Q, 1'b0};
 
-                    // Adjust A and Q based on remainder sign
                     if (next_A[15] == 1'b0) begin
-                        next_A = next_A - {8'd0, M};  // Subtract M
-                        next_Q[0] = 1'b1;             // Set Q[0] to 1
+                        next_A = next_A - {8'd0, M};
+                        next_Q[0] = 1'b1;
                     end else begin
-                        next_A = next_A + {8'd0, M};  // Add M
-                        next_Q[0] = 1'b0;             // Set Q[0] to 0
+                        next_A = next_A + {8'd0, M};
+                        next_Q[0] = 1'b0;
                     end
 
-                    // Commit values
                     A <= next_A;
                     Q <= next_Q;
                     count <= count + 4'd1;
                 end
 
                 DONE: begin
-                    // Division by zero handling
                     if (b == 0) begin
                         quotient <= 16'sd0;
+                        remainder <= 16'sd0;
                     end else begin
-                        // Apply final sign to quotient
+                        // Final sign correction for quotient
                         if (a_sign ^ b_sign)
                             quotient <= -{8'd0, Q};
                         else
                             quotient <= {8'd0, Q};
+
+                        // Restul trebuie corectat dacă e negativ (non-restoring rule)
+                        if (A[15] == 1'b1)
+                            remainder <= A + {8'd0, M}; // Corectare rest negativ
+                        else
+                            remainder <= A;
                     end
-                    done <= 1'b1;  // Set done flag
+                    done <= 1'b1;
                 end
 
                 default: begin
